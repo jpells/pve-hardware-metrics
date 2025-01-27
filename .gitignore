@@ -1,0 +1,20 @@
+# Python
+__pycache__/
+*.egg-info/
+.venv/
+
+# Coverage
+.coverage
+coverage.xml
+
+# Cache
+.mypy_cache/
+.pytest_cache/
+.ruff_cache/
+
+# Mac
+.DS_Store
+
+# VS Code
+.vscode/
+*.code-workspace
