@@ -14,11 +14,11 @@ import logging.handlers
 import os
 import re
 import socket
+import subprocess
 import sys
 from contextlib import contextmanager
 from datetime import UTC, datetime
 from pathlib import Path
-from subprocess import CalledProcessError, run
 from typing import TYPE_CHECKING, Any
 
 from dotenv import load_dotenv
@@ -35,32 +35,6 @@ logging.basicConfig(
 logger = logging.getLogger(Path(__file__).name)
 
 
-def run_command(command: list[str]) -> str:
-    """Run a shell command and return its output.
-
-    Args:
-        command (list): The command to run as a list of arguments.
-
-    Returns:
-        str: The standard output of the command.
-
-    Raises:
-        SystemExit: If the command fails.
-
-    """
-    try:
-        result = run(command, capture_output=True, text=True, check=True)  # noqa: S603
-    except CalledProcessError as e:
-        logger.exception(
-            "Command '%s' failed with error: %s",
-            " ".join(command),
-            e.stderr,
-        )
-        sys.exit(1)
-    else:
-        return result.stdout
-
-
 def get_sensors_data() -> dict[str, Any]:
     """Get sensor data in JSON format.
 
@@ -69,9 +43,10 @@ def get_sensors_data() -> dict[str, Any]:
 
     """
     try:
-        parsed_data: dict[str, Any] = json.loads(
-            run_command(["/usr/bin/sensors", "-j"])
+        output = subprocess.check_output(  # noqa: S603
+            ["/usr/bin/sensors", "-j"], text=True, timeout=2
         )
+        parsed_data: dict[str, Any] = json.loads(output)
     except json.JSONDecodeError:
         logger.exception(
             "Failed to get or parse JSON output from sensors."
@@ -138,7 +113,10 @@ def get_disks() -> list[str]:
 
     """
     try:
-        result = json.loads(run_command(["/usr/bin/lsblk", "-J", "-o", "NAME,TYPE"]))
+        output = subprocess.check_output(  # noqa: S603
+            ["/usr/bin/lsblk", "-J", "-o", "NAME,TYPE"], text=True, timeout=2
+        )
+        result = json.loads(output)
         return [
             device["name"]
             for device in result["blockdevices"]
@@ -163,9 +141,10 @@ def get_smartctl_data(disk: str) -> dict[str, Any]:
 
     """
     try:
-        parsed_data: dict[str, Any] = json.loads(
-            run_command(["/usr/sbin/smartctl", "-A", "-j", f"/dev/{disk}"])
+        output = subprocess.check_output(  # noqa: S603
+            ["/usr/sbin/smartctl", "-A", "-j", f"/dev/{disk}"], text=True, timeout=2
         )
+        parsed_data: dict[str, Any] = json.loads(output)
     except json.JSONDecodeError:
         logger.exception(
             "Failed to get or parse JSON output from smartctl."
@@ -271,7 +250,9 @@ def get_vms() -> list[tuple[str, str]]:
         list: A list of tuples containing VM ID and VM name.
 
     """
-    result = run_command(["/usr/sbin/qm", "list"])
+    result = subprocess.check_output(  # noqa: S603
+        ["/usr/sbin/qm", "list"], text=True, timeout=2
+    )
     vm_list = result.strip().split("\n")[1:]
     return [
         (vm_info.split()[0], vm_info.split()[1])
@@ -290,7 +271,9 @@ def get_vm_disk_data(vm_id: str) -> str:
         str: The filesystem information output.
 
     """
-    return run_command(["/usr/sbin/qm", "agent", vm_id, "get-fsinfo"])
+    return subprocess.check_output(  # noqa: S603
+        ["/usr/sbin/qm", "agent", vm_id, "get-fsinfo"], text=True, timeout=2
+    )
 
 
 def parse_vm_disk_data(
