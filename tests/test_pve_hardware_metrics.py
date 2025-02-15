@@ -2,6 +2,7 @@
 
 import argparse
 import json
+from subprocess import CalledProcessError
 from unittest import mock
 from unittest.mock import Mock, patch
 
@@ -390,6 +391,25 @@ def test_get_vm_disk_data(mock_check_output: Mock) -> None:
         pve_hardware_metrics.get_vm_disk_data("100")
         == '{"name": "sda1", "mountpoint": "/", "used-bytes": 1024}'
     )
+
+
+@patch("subprocess.run")
+def test_get_vm_disk_data_vm_shutdown(mock_run: Mock) -> None:
+    """Test the get_vm_disk_data function when VM is shut down.
+
+    Args:
+        mock_run (Mock): Mocked run function.
+
+    """
+    mock_run.side_effect = CalledProcessError(
+        255, "cmd", stderr="QEMU guest agent is not running"
+    )
+    assert pve_hardware_metrics.get_vm_disk_data("100") == ""
+
+    # Test with any other error message
+    mock_run.side_effect = CalledProcessError(255, "cmd", stderr="")
+    with pytest.raises(CalledProcessError):
+        pve_hardware_metrics.get_vm_disk_data("100")
 
 
 def test_parse_vm_disk_data() -> None:

@@ -271,9 +271,15 @@ def get_vm_disk_data(vm_id: str) -> str:
         str: The filesystem information output.
 
     """
-    return subprocess.check_output(  # noqa: S603
-        ["/usr/sbin/qm", "agent", vm_id, "get-fsinfo"], text=True, timeout=2
-    )
+    try:
+        return subprocess.check_output(  # noqa: S603
+            ["/usr/sbin/qm", "agent", vm_id, "get-fsinfo"], text=True, timeout=2
+        )
+    except subprocess.CalledProcessError as e:
+        if e.stderr and "QEMU guest agent is not running" in e.stderr:
+            logger.warning("VM %s is shut down, skipping disk data collection.", vm_id)
+            return ""
+        raise
 
 
 def parse_vm_disk_data(
