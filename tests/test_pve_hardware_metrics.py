@@ -9,22 +9,7 @@ from unittest.mock import Mock, patch
 import pytest
 from influxdb_client.client.exceptions import InfluxDBError
 
-from pve_hardware_metrics import (
-    delete_measurement,
-    get_disks,
-    get_env_variable,
-    get_sensors_data,
-    get_smartctl_data,
-    get_vm_disk_data,
-    get_vms,
-    influxdb_client,
-    main,
-    parse_sensors_data,
-    parse_smartctl_data,
-    parse_vm_disk_data,
-    run_command,
-    upload_measurements,
-)
+import pve_hardware_metrics
 
 
 @patch("pve_hardware_metrics.getenv")
@@ -36,10 +21,10 @@ def test_get_env_variable(mock_getenv: Mock) -> None:
 
     """
     mock_getenv.return_value = "test_value"
-    assert get_env_variable("TEST_VAR") == "test_value"
+    assert pve_hardware_metrics.get_env_variable("TEST_VAR") == "test_value"
     mock_getenv.return_value = None
     with pytest.raises(SystemExit):
-        get_env_variable("TEST_VAR")
+        pve_hardware_metrics.get_env_variable("TEST_VAR")
 
 
 @patch("pve_hardware_metrics.run")
@@ -51,10 +36,10 @@ def test_run_command(mock_run: Mock) -> None:
 
     """
     mock_run.return_value.stdout = "command output"
-    assert run_command(["echo", "test"]) == "command output"
+    assert pve_hardware_metrics.run_command(["echo", "test"]) == "command output"
     mock_run.side_effect = CalledProcessError(1, "cmd", "error")
     with pytest.raises(SystemExit):
-        run_command(["echo", "test"])
+        pve_hardware_metrics.run_command(["echo", "test"])
 
 
 @patch("pve_hardware_metrics.run_command")
@@ -66,9 +51,11 @@ def test_get_sensors_data(mock_run_command: Mock) -> None:
 
     """
     mock_run_command.return_value = '{"sensor": {"Adapter": "ISA adapter"}}'
-    assert get_sensors_data() == {"sensor": {"Adapter": "ISA adapter"}}
+    assert pve_hardware_metrics.get_sensors_data() == {
+        "sensor": {"Adapter": "ISA adapter"}
+    }
     mock_run_command.return_value = "invalid json"
-    assert get_sensors_data() == {}
+    assert pve_hardware_metrics.get_sensors_data() == {}
 
 
 def test_parse_sensors_data() -> None:
@@ -184,7 +171,9 @@ def test_parse_sensors_data() -> None:
             },
         },
     ]
-    assert parse_sensors_data("test_host", sensors_data) == expected
+    assert (
+        pve_hardware_metrics.parse_sensors_data("test_host", sensors_data) == expected
+    )
 
 
 @patch("pve_hardware_metrics.run_command")
@@ -198,7 +187,7 @@ def test_get_disks(mock_run_command: Mock) -> None:
     mock_run_command.return_value = (
         '{"blockdevices": [{"name": "sda", "type": "disk"}]}'
     )
-    assert get_disks() == ["sda"]
+    assert pve_hardware_metrics.get_disks() == ["sda"]
 
 
 @patch("pve_hardware_metrics.run_command")
@@ -211,7 +200,7 @@ def test_get_disks_fail(mock_run_command: Mock) -> None:
     """
     mock_run_command.return_value = "invalid json"
     with pytest.raises(SystemExit):
-        get_disks()
+        pve_hardware_metrics.get_disks()
 
 
 @patch("pve_hardware_metrics.run_command")
@@ -225,14 +214,14 @@ def test_get_smartctl_data(mock_run_command: Mock) -> None:
     mock_run_command.return_value = (
         """{"json_format_version": [1,0], "smartctl": {"version": [7,3]}}"""
     )
-    assert get_smartctl_data("/dev/nvme0n1") == {
+    assert pve_hardware_metrics.get_smartctl_data("/dev/nvme0n1") == {
         "json_format_version": [1, 0],
         "smartctl": {
             "version": [7, 3],
         },
     }
     mock_run_command.return_value = "invalid json"
-    assert get_smartctl_data("/dev/nvme0n1") == {}
+    assert pve_hardware_metrics.get_smartctl_data("/dev/nvme0n1") == {}
 
 
 def test_parse_nvme_smartctl_data() -> None:
@@ -303,7 +292,9 @@ def test_parse_nvme_smartctl_data() -> None:
             "warning_temp_time": 0,
         },
     }
-    assert parse_smartctl_data("test_host", "nvme0", data) == expected
+    assert (
+        pve_hardware_metrics.parse_smartctl_data("test_host", "nvme0", data) == expected
+    )
 
 
 def test_parse_sata_smartctl_data() -> None:
@@ -398,7 +389,9 @@ def test_parse_sata_smartctl_data() -> None:
             "read_error_retry_rate": 0,
         },
     }
-    assert parse_smartctl_data("test_host", "sda", data) == expected
+    assert (
+        pve_hardware_metrics.parse_smartctl_data("test_host", "sda", data) == expected
+    )
 
 
 @patch("pve_hardware_metrics.run_command")
@@ -410,7 +403,7 @@ def test_get_vms(mock_run_command: Mock) -> None:
 
     """
     mock_run_command.return_value = "VMID NAME STATUS\n100 vm_name running"
-    assert get_vms() == [("100", "vm_name")]
+    assert pve_hardware_metrics.get_vms() == [("100", "vm_name")]
 
 
 @patch("pve_hardware_metrics.run_command")
@@ -425,7 +418,7 @@ def test_get_vm_disk_data(mock_run_command: Mock) -> None:
         '{"name": "sda1", "mountpoint": "/", "used-bytes": 1024}'
     )
     assert (
-        get_vm_disk_data("100")
+        pve_hardware_metrics.get_vm_disk_data("100")
         == '{"name": "sda1", "mountpoint": "/", "used-bytes": 1024}'
     )
 
@@ -481,7 +474,10 @@ def test_parse_vm_disk_data() -> None:
         "fields": {"disk": 2426138624.0},
     }
     assert (
-        parse_vm_disk_data("test_host", "100", "vm_name", json.dumps(data)) == expected
+        pve_hardware_metrics.parse_vm_disk_data(
+            "test_host", "100", "vm_name", json.dumps(data)
+        )
+        == expected
     )
 
 
@@ -499,7 +495,7 @@ def test_influxdb_client(mock_influxdb_client: Mock) -> None:
         "token": "test_token",
         "org": "test_org",
     }
-    with influxdb_client(influx_creds) as client:
+    with pve_hardware_metrics.influxdb_client(influx_creds) as client:
         assert client == mock_influxdb_client.return_value
     mock_influxdb_client.assert_called_once_with(
         url="http://localhost:8086",
@@ -527,12 +523,12 @@ def test_influxdb_client_exceptions(mock_influxdb_client: Mock) -> None:
 
     # Test InfluxDBError handling
     mock_influxdb_client.side_effect = InfluxDBError(response=mock.Mock())
-    with pytest.raises(SystemExit), influxdb_client(influx_creds):
+    with pytest.raises(SystemExit), pve_hardware_metrics.influxdb_client(influx_creds):
         pass  # pragma: no cover
 
     # Reset side effect for other tests
     mock_influxdb_client.side_effect = None
-    with influxdb_client(influx_creds) as client:
+    with pve_hardware_metrics.influxdb_client(influx_creds) as client:
         assert client == mock_influxdb_client.return_value
 
 
@@ -559,7 +555,7 @@ def test_upload_measurements(
     mock_client = mock_influxdb_client.return_value.__enter__.return_value
     mock_write_api = mock_client.write_api.return_value
 
-    upload_measurements(influx_creds, measurements_list)
+    pve_hardware_metrics.upload_measurements(influx_creds, measurements_list)
 
     mock_client.write_api.assert_called_once_with(write_options=mock_synchronous)
     mock_write_api.write.assert_called_once_with(
@@ -585,7 +581,7 @@ def test_delete_measurement(mock_influxdb_client: Mock) -> None:
     mock_client = mock_influxdb_client.return_value.__enter__.return_value
     mock_delete_api = mock_client.delete_api.return_value
 
-    delete_measurement(influx_creds, "test_measurement")
+    pve_hardware_metrics.delete_measurement(influx_creds, "test_measurement")
 
     mock_delete_api.delete.assert_called_with(
         "1970-01-01T00:00:00Z",
@@ -628,7 +624,7 @@ def test_main(
         "argparse.ArgumentParser.parse_args",
         return_value=argparse.Namespace(vm_disk=False, test=True, delete=None),
     ):
-        main()
+        pve_hardware_metrics.main()
     mock_upload_measurements.assert_not_called()
     mock_parse_sensors_data.assert_called_once_with("test_value", {})
 
@@ -655,7 +651,7 @@ def test_main_with_delete(
         ),
         pytest.raises(SystemExit),
     ):
-        main()
+        pve_hardware_metrics.main()
     mock_delete_measurement.assert_called_once_with(
         {
             "host": "test_value",
@@ -699,7 +695,7 @@ def test_main_nvme_disk_name_trimming(
         "argparse.ArgumentParser.parse_args",
         return_value=argparse.Namespace(vm_disk=False, test=False, delete=None),
     ):
-        main()
+        pve_hardware_metrics.main()
 
     mock_upload_measurements.assert_called_once()
     measurements = mock_upload_measurements.call_args[0][1]
@@ -766,7 +762,7 @@ def test_main_with_vm_disk_data(  # noqa: PLR0913
         "argparse.ArgumentParser.parse_args",
         return_value=argparse.Namespace(vm_disk=True, test=False, delete=None),
     ):
-        main()
+        pve_hardware_metrics.main()
 
     mock_upload_measurements.assert_called_once()
     measurements = mock_upload_measurements.call_args[0][1]
