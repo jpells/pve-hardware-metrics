@@ -27,13 +27,10 @@ from influxdb_client.client.write_api import SYNCHRONOUS
 if TYPE_CHECKING:  # pragma: no cover
     from collections.abc import Generator
 
-# Configure logging
-formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
-stream_handler = logging.StreamHandler(sys.stdout)
-stream_handler.setFormatter(formatter)
+logging.basicConfig(
+    level="INFO", format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+)
 logger = logging.getLogger(Path(__file__).name)
-logger.setLevel(logging.INFO)
-logger.addHandler(stream_handler)
 
 
 def get_env_variable(
