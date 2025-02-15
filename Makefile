@@ -9,13 +9,15 @@ install: ## Install the app and pre-commit hooks with uv
 	@uv run pre-commit install
 
 .PHONY: check
-check: ## Run code quality checks (pre-commit hooks and mypy)
+check: ## Run code quality checks (pre-commit hooks, mypy, and gitlint)
 	@echo "🚑 Verifying uv lock file..."
 	@uv lock --locked
 	@echo "🚑 Running pre-commit hooks..."
 	@uv run pre-commit run -a
 	@echo "🚑 Running mypy type checker..."
 	@uv run mypy
+	@echo "🚑 Running gitlint..."
+	@uv run gitlint --commits "origin/main..HEAD"
 
 .PHONY: test
 test: ## Run tests with pytest and coverage
