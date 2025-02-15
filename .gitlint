@@ -1,0 +1,14 @@
+[general]
+# Enable community contributed rules
+contrib=contrib-title-conventional-commits
+
+# Configure title-max-length
+[title-max-length]
+line-length=72
+
+[title-match-regex]
+# Gitmoji + Conventional Commits pattern
+regex=^(:\w+:\s)?(build|chore|ci|docs|feat|fix|perf|refactor|revert|style|test)(\([a-z-]+\))?!?:\s.*
+
+[body-max-line-length]
+line-length=72
