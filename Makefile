@@ -7,6 +7,7 @@ install: ## Install the app and pre-commit hooks with uv
 	@echo "🎉 Installing the app and pre-commit hooks with uv..."
 	@uv sync
 	@uv run pre-commit install
+	@uv run pre-commit install --hook-type commit-msg
 
 .PHONY: check
 check: ## Run code quality checks (pre-commit hooks and mypy)

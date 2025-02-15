@@ -18,6 +18,7 @@ dev = [
     "pytest-cov>=4.0.0",
     "pytest-randomly>=3.16.0",
     "pytest-xdist>=3.6.1",
+    "gitlint>=0.19.1",
 ]
 
 [build-system]
