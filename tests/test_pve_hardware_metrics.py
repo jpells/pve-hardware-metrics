@@ -12,21 +12,6 @@ from influxdb_client.client.exceptions import InfluxDBError
 import pve_hardware_metrics
 
 
-@patch("pve_hardware_metrics.getenv")
-def test_get_env_variable(mock_getenv: Mock) -> None:
-    """Test the get_env_variable function.
-
-    Args:
-        mock_getenv (Mock): Mocked getenv function.
-
-    """
-    mock_getenv.return_value = "test_value"
-    assert pve_hardware_metrics.get_env_variable("TEST_VAR") == "test_value"
-    mock_getenv.return_value = None
-    with pytest.raises(SystemExit):
-        pve_hardware_metrics.get_env_variable("TEST_VAR")
-
-
 @patch("pve_hardware_metrics.run")
 def test_run_command(mock_run: Mock) -> None:
     """Test the run_command function.
@@ -490,8 +475,7 @@ def test_influxdb_client(mock_influxdb_client: Mock) -> None:
 
     """
     influx_creds = {
-        "host": "http://localhost",
-        "port": "8086",
+        "url": "http://localhost:8086",
         "token": "test_token",
         "org": "test_org",
     }
@@ -515,8 +499,7 @@ def test_influxdb_client_exceptions(mock_influxdb_client: Mock) -> None:
 
     """
     influx_creds = {
-        "host": "http://localhost",
-        "port": "8086",
+        "url": "http://localhost:8086",
         "token": "test_token",
         "org": "test_org",
     }
@@ -545,8 +528,7 @@ def test_upload_measurements(
 
     """
     influx_creds = {
-        "host": "http://localhost",
-        "port": "8086",
+        "url": "http://localhost:8086",
         "token": "test_token",
         "org": "test_org",
         "bucket": "test_bucket",
@@ -572,8 +554,7 @@ def test_delete_measurement(mock_influxdb_client: Mock) -> None:
 
     """
     influx_creds = {
-        "host": "http://localhost",
-        "port": "8086",
+        "url": "http://localhost:8086",
         "token": "test_token",
         "org": "test_org",
         "bucket": "test_bucket",
@@ -595,11 +576,11 @@ def test_delete_measurement(mock_influxdb_client: Mock) -> None:
 @patch("pve_hardware_metrics.upload_measurements")
 @patch("pve_hardware_metrics.parse_sensors_data")
 @patch("pve_hardware_metrics.get_sensors_data")
-@patch("pve_hardware_metrics.get_env_variable")
 @patch("pve_hardware_metrics.run_command")
+@patch("socket.gethostname")
 def test_main(
+    mock_gethostname: Mock,
     mock_run_command: Mock,
-    mock_get_env_variable: Mock,
     mock_get_sensors_data: Mock,
     mock_parse_sensors_data: Mock,
     mock_upload_measurements: Mock,
@@ -607,14 +588,14 @@ def test_main(
     """Test the main function.
 
     Args:
+        mock_gethostname (Mock): Mocked gethostname function.
         mock_run_command (Mock): Mocked run_command function.
-        mock_get_env_variable (Mock): Mocked get_env_variable function.
         mock_get_sensors_data (Mock): Mocked get_sensors_data function.
         mock_parse_sensors_data (Mock): Mocked parse_sensors_data function.
         mock_upload_measurements (Mock): Mocked upload_measurements function.
 
     """
-    mock_get_env_variable.return_value = "test_value"
+    mock_gethostname.return_value = "test_value"
     mock_get_sensors_data.return_value = {}
     mock_parse_sensors_data.return_value = []
     mock_run_command.return_value = (
@@ -630,18 +611,18 @@ def test_main(
 
 
 @patch("pve_hardware_metrics.delete_measurement")
-@patch("pve_hardware_metrics.get_env_variable")
+@patch("socket.gethostname")
 def test_main_with_delete(
-    mock_get_env_variable: Mock, mock_delete_measurement: Mock
+    mock_gethostname: Mock, mock_delete_measurement: Mock
 ) -> None:
     """Test the main function with delete argument.
 
     Args:
-        mock_get_env_variable (Mock): Mocked get_env_variable function.
+        mock_gethostname (Mock): Mocked gethostname function.
         mock_delete_measurement (Mock): Mocked delete_measurement function.
 
     """
-    mock_get_env_variable.return_value = "test_value"
+    mock_gethostname.return_value = "test_value"
     with (
         patch(
             "argparse.ArgumentParser.parse_args",
@@ -654,11 +635,10 @@ def test_main_with_delete(
         pve_hardware_metrics.main()
     mock_delete_measurement.assert_called_once_with(
         {
-            "host": "test_value",
-            "port": "test_value",
-            "token": "test_value",
-            "org": "test_value",
-            "bucket": "test_value",
+            "url": "http://localhost:8086",
+            "token": "token",
+            "org": "organization",
+            "bucket": "bucket",
         },
         "test_measurement",
     )
@@ -667,11 +647,9 @@ def test_main_with_delete(
 @patch("pve_hardware_metrics.get_smartctl_data")
 @patch("pve_hardware_metrics.get_disks")
 @patch("pve_hardware_metrics.get_sensors_data")
-@patch("pve_hardware_metrics.get_env_variable")
 @patch("pve_hardware_metrics.upload_measurements")
 def test_main_nvme_disk_name_trimming(
     mock_upload_measurements: Mock,
-    mock_get_env_variable: Mock,
     mock_get_sensors_data: Mock,
     mock_get_disks: Mock,
     mock_get_smartctl_data: Mock,
@@ -680,13 +658,11 @@ def test_main_nvme_disk_name_trimming(
 
     Args:
         mock_upload_measurements (Mock): Mocked upload_measurements function.
-        mock_get_env_variable (Mock): Mocked get_env_variable function.
         mock_get_sensors_data (Mock): Mocked get_sensors_data function.
         mock_get_disks (Mock): Mocked get_disks function.
         mock_get_smartctl_data (Mock): Mocked get_smartctl_data function.
 
     """
-    mock_get_env_variable.return_value = "test_value"
     mock_get_sensors_data.return_value = {}
     mock_get_disks.return_value = ["nvme0n1"]
     mock_get_smartctl_data.return_value = {}
@@ -708,7 +684,6 @@ def test_main_nvme_disk_name_trimming(
 @patch("pve_hardware_metrics.get_vm_disk_data")
 @patch("pve_hardware_metrics.parse_vm_disk_data")
 @patch("pve_hardware_metrics.upload_measurements")
-@patch("pve_hardware_metrics.get_env_variable")
 @patch("pve_hardware_metrics.get_sensors_data")
 @patch("pve_hardware_metrics.parse_sensors_data")
 @patch("pve_hardware_metrics.get_disks")
@@ -718,7 +693,6 @@ def test_main_with_vm_disk_data(  # noqa: PLR0913
     mock_get_disks: Mock,
     mock_parse_sensors_data: Mock,
     mock_get_sensors_data: Mock,
-    mock_get_env_variable: Mock,
     mock_upload_measurements: Mock,
     mock_parse_vm_disk_data: Mock,
     mock_get_vm_disk_data: Mock,
@@ -731,14 +705,12 @@ def test_main_with_vm_disk_data(  # noqa: PLR0913
         mock_get_disks (Mock): Mocked get_disks function.
         mock_parse_sensors_data (Mock): Mocked parse_sensors_data function.
         mock_get_sensors_data (Mock): Mocked get_sensors_data function.
-        mock_get_env_variable (Mock): Mocked get_env_variable function.
         mock_upload_measurements (Mock): Mocked upload_measurements function.
         mock_parse_vm_disk_data (Mock): Mocked parse_vm_disk_data function.
         mock_get_vm_disk_data (Mock): Mocked get_vm_disk_data function.
         mock_get_vms (Mock): Mocked get_vms function.
 
     """
-    mock_get_env_variable.return_value = "test_value"
     mock_get_sensors_data.return_value = {}
     mock_parse_sensors_data.return_value = []
     mock_get_disks.return_value = ["sda"]

@@ -11,15 +11,17 @@ import argparse
 import json
 import logging
 import logging.handlers
+import os
 import re
+import socket
 import sys
 from contextlib import contextmanager
 from datetime import UTC, datetime
-from os import getenv
 from pathlib import Path
 from subprocess import CalledProcessError, run
 from typing import TYPE_CHECKING, Any
 
+from dotenv import load_dotenv
 from influxdb_client.client.exceptions import InfluxDBError
 from influxdb_client.client.influxdb_client import InfluxDBClient
 from influxdb_client.client.write_api import SYNCHRONOUS
@@ -31,31 +33,6 @@ logging.basicConfig(
     level="INFO", format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
 )
 logger = logging.getLogger(Path(__file__).name)
-
-
-def get_env_variable(
-    var_name: str,
-    default: str | float | None = None,
-) -> str | int | float:
-    """Get an environment variable and validate its presence.
-
-    Args:
-        var_name (str): The name of the environment variable.
-        default (Optional[Union[str, int, float]]): The default value if the
-            environment variable is not set.
-
-    Returns:
-        Union[str, int, float]: The value of the environment variable.
-
-    Raises:
-        SystemExit: If the environment variable is not set and no default is provided.
-
-    """
-    value = getenv(var_name, default)
-    if value is None:
-        logger.exception("Environment variable %s is not set.", var_name)
-        sys.exit(1)
-    return value
 
 
 def run_command(command: list[str]) -> str:
@@ -364,7 +341,7 @@ def influxdb_client(
     """
     try:
         client = InfluxDBClient(
-            url=f"{influx_creds['host']}:{influx_creds['port']}",
+            url=influx_creds["url"],
             token=influx_creds["token"],
             org=influx_creds["org"],
             timeout=30000,
@@ -372,9 +349,7 @@ def influxdb_client(
         yield client
     except (TimeoutError, InfluxDBError, Exception):
         logger.exception(
-            "Connection Error: Could not connect to %s:%s",
-            influx_creds["host"],
-            influx_creds["port"],
+            "Connection Error: Could not connect to %s", influx_creds["url"]
         )
         sys.exit(1)
     else:
@@ -489,13 +464,13 @@ def main() -> None:
     args = parser.parse_args()
 
     # Validate and get environment variables
-    host = str(get_env_variable("HOST_TAG"))
+    load_dotenv()  # Load environment variables
+    host = os.getenv("HOST_NAME", socket.gethostname())
     influx_creds = {
-        "host": str(get_env_variable("INFLUX_HOST")),
-        "port": str(get_env_variable("INFLUX_PORT")),
-        "token": str(get_env_variable("INFLUX_TOKEN")),
-        "org": str(get_env_variable("INFLUX_ORGANIZATION")),
-        "bucket": str(get_env_variable("INFLUX_BUCKET")),
+        "url": os.getenv("INFLUX_URL", "http://localhost:8086"),
+        "token": os.getenv("INFLUX_TOKEN", "token"),
+        "org": os.getenv("INFLUX_ORG", "organization"),
+        "bucket": os.getenv("INFLUX_BUCKET", "bucket"),
     }
 
     if args.delete:
