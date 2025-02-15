@@ -18,7 +18,7 @@ check: ## Run code quality checks (pre-commit hooks, mypy, and gitlint)
 	@echo "🚑 Running mypy type checker..."
 	@uv run mypy
 	@echo "🚑 Running gitlint..."
-	@uv run gitlint --commits "origin/main..HEAD"
+	@uv run gitlint
 
 .PHONY: test
 test: ## Run tests with pytest and coverage
