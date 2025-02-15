@@ -341,7 +341,7 @@ def influxdb_client(
     """
     try:
         client = InfluxDBClient(
-            url=f"{influx_creds['host']}:{influx_creds['port']}",
+            url=influx_creds["url"],
             token=influx_creds["token"],
             org=influx_creds["org"],
             timeout=30000,
@@ -349,9 +349,7 @@ def influxdb_client(
         yield client
     except (TimeoutError, InfluxDBError, Exception):
         logger.exception(
-            "Connection Error: Could not connect to %s:%s",
-            influx_creds["host"],
-            influx_creds["port"],
+            "Connection Error: Could not connect to %s", influx_creds["url"]
         )
         sys.exit(1)
     else:
@@ -469,10 +467,9 @@ def main() -> None:
     load_dotenv()  # Load environment variables
     host = os.getenv("HOST_NAME", socket.gethostname())
     influx_creds = {
-        "host": os.getenv("INFLUX_HOST", "http://localhost"),
-        "port": os.getenv("INFLUX_PORT", "8086"),
+        "url": os.getenv("INFLUX_URL", "http://localhost:8086"),
         "token": os.getenv("INFLUX_TOKEN", "token"),
-        "org": os.getenv("INFLUX_ORGANIZATION", "organization"),
+        "org": os.getenv("INFLUX_ORG", "organization"),
         "bucket": os.getenv("INFLUX_BUCKET", "bucket"),
     }
 

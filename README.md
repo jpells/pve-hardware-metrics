@@ -36,10 +36,9 @@ Configure the script using the following environment variables:
 | **Variable**         | **Description**               | **Required** |
 |----------------------|-------------------------------|--------------|
 | `HOST_TAG`           | Proxmox host name             | No           |
-| `INFLUX_HOST`        | InfluxDB server address       | Yes          |
-| `INFLUX_PORT`        | InfluxDB server port          | Yes          |
+| `INFLUX_URL`         | InfluxDB server address       | Yes          |
 | `INFLUX_TOKEN`       | Authentication token          | Yes          |
-| `INFLUX_ORGANIZATION`| InfluxDB organization name    | Yes          |
+| `INFLUX_ORG`         | InfluxDB organization name    | Yes          |
 | `INFLUX_BUCKET`      | Target bucket name            | Yes          |
 
 You can also store these environment variables in a `.env` file in the project directory. The `python-dotenv` library will automatically load them.

@@ -475,8 +475,7 @@ def test_influxdb_client(mock_influxdb_client: Mock) -> None:
 
     """
     influx_creds = {
-        "host": "http://localhost",
-        "port": "8086",
+        "url": "http://localhost:8086",
         "token": "test_token",
         "org": "test_org",
     }
@@ -500,8 +499,7 @@ def test_influxdb_client_exceptions(mock_influxdb_client: Mock) -> None:
 
     """
     influx_creds = {
-        "host": "http://localhost",
-        "port": "8086",
+        "url": "http://localhost:8086",
         "token": "test_token",
         "org": "test_org",
     }
@@ -530,8 +528,7 @@ def test_upload_measurements(
 
     """
     influx_creds = {
-        "host": "http://localhost",
-        "port": "8086",
+        "url": "http://localhost:8086",
         "token": "test_token",
         "org": "test_org",
         "bucket": "test_bucket",
@@ -557,8 +554,7 @@ def test_delete_measurement(mock_influxdb_client: Mock) -> None:
 
     """
     influx_creds = {
-        "host": "http://localhost",
-        "port": "8086",
+        "url": "http://localhost:8086",
         "token": "test_token",
         "org": "test_org",
         "bucket": "test_bucket",
@@ -639,8 +635,7 @@ def test_main_with_delete(
         pve_hardware_metrics.main()
     mock_delete_measurement.assert_called_once_with(
         {
-            "host": "http://localhost",
-            "port": "8086",
+            "url": "http://localhost:8086",
             "token": "token",
             "org": "organization",
             "bucket": "bucket",
