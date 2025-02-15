@@ -1,5 +1,5 @@
 [general]
-# Ignore body-is-missing violations
+# allow commits with only a subject line
 ignore=body-is-missing
 
 extra-path=gitlint_rules.py
