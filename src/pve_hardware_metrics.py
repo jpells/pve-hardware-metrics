@@ -404,7 +404,7 @@ def delete_measurement(influx_creds: dict[str, str], measurement: str) -> None:
         )
 
 
-def collect_measurements(host: str, vm_disk: bool) -> list[dict[str, Any]]:  # noqa: FBT001
+def collect_measurements(host: str, *, vm_disk: bool) -> list[dict[str, Any]]:
     """Collect sensor, smartctl, and VM disk data measurements.
 
     Args:
@@ -478,7 +478,7 @@ def main() -> None:
         sys.exit(0)
 
     # Collect measurements
-    measurements = collect_measurements(host, args.vm_disk)
+    measurements = collect_measurements(host, vm_disk=args.vm_disk)
 
     if args.test:
         # just testing :)
