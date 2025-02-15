@@ -1,7 +1,6 @@
 """Unit tests for the pve_hardware_metrics module."""
 
 import argparse
-import json
 import subprocess
 from unittest import mock
 from unittest.mock import Mock, patch
@@ -385,12 +384,15 @@ def test_get_vm_disk_data(mock_check_output: Mock) -> None:
 
     """
     mock_check_output.return_value = (
-        '{"name": "sda1", "mountpoint": "/", "used-bytes": 1024}'
+        '[{"name": "sda1", "mountpoint": "/", "used-bytes": 1024}]'
     )
-    assert (
-        pve_hardware_metrics.get_vm_disk_data("100")
-        == '{"name": "sda1", "mountpoint": "/", "used-bytes": 1024}'
-    )
+    assert pve_hardware_metrics.get_vm_disk_data("100") == [
+        {
+            "name": "sda1",
+            "mountpoint": "/",
+            "used-bytes": 1024,
+        }
+    ]
 
 
 @patch("subprocess.run")
@@ -402,9 +404,9 @@ def test_get_vm_disk_data_vm_shutdown(mock_run: Mock) -> None:
 
     """
     mock_run.side_effect = subprocess.CalledProcessError(1, "cmd")
-    assert pve_hardware_metrics.get_vm_disk_data("100") == ""
+    assert pve_hardware_metrics.get_vm_disk_data("100") == []
     mock_run.side_effect = subprocess.TimeoutExpired("cmd", 2)
-    assert pve_hardware_metrics.get_vm_disk_data("100") == ""
+    assert pve_hardware_metrics.get_vm_disk_data("100") == []
 
 
 def test_parse_vm_disk_data() -> None:
@@ -458,9 +460,7 @@ def test_parse_vm_disk_data() -> None:
         "fields": {"disk": 2426138624.0},
     }
     assert (
-        pve_hardware_metrics.parse_vm_disk_data(
-            "test_host", "100", "vm_name", json.dumps(data)
-        )
+        pve_hardware_metrics.parse_vm_disk_data("test_host", "100", "vm_name", data)
         == expected
     )
 

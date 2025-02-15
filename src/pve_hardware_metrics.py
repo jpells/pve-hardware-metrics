@@ -261,7 +261,7 @@ def get_vms() -> list[tuple[str, str]]:
     ]
 
 
-def get_vm_disk_data(vm_id: str) -> str:
+def get_vm_disk_data(vm_id: str) -> list[dict[str, Any]]:
     """Get filesystem information for a given VM.
 
     Args:
@@ -272,18 +272,21 @@ def get_vm_disk_data(vm_id: str) -> str:
 
     """
     try:
-        return subprocess.check_output(  # noqa: S603
+        output = subprocess.check_output(  # noqa: S603
             ["/usr/sbin/qm", "agent", vm_id, "get-fsinfo"], text=True, timeout=2
         )
+        parsed_data: list[dict[str, Any]] = json.loads(output)
     except (subprocess.CalledProcessError, subprocess.TimeoutExpired) as e:
         logger.warning(
             "Failed to get filesystem information for VM %s: %s", vm_id, str(e)
         )
-        return ""
+        return []
+    else:
+        return parsed_data
 
 
 def parse_vm_disk_data(
-    host: str, vm_id: str, vm_name: str, data: str
+    host: str, vm_id: str, vm_name: str, data: list[dict[str, Any]]
 ) -> dict[str, Any]:
     """Parse filesystem information into a measurement.
 
@@ -297,9 +300,8 @@ def parse_vm_disk_data(
         dict: A parsed measurement.
 
     """
-    fsinfo = json.loads(data)
     total_used = 0
-    for fs in fsinfo:
+    for fs in data:
         if fs["name"] == "sda1" and fs["mountpoint"] == "/":
             total_used += fs["used-bytes"]
     # Mimic Proxmox but with accurate disk usage
