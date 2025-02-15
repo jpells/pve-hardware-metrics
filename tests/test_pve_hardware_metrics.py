@@ -2,7 +2,7 @@
 
 import argparse
 import json
-from subprocess import CalledProcessError
+import subprocess
 from unittest import mock
 from unittest.mock import Mock, patch
 
@@ -401,15 +401,10 @@ def test_get_vm_disk_data_vm_shutdown(mock_run: Mock) -> None:
         mock_run (Mock): Mocked run function.
 
     """
-    mock_run.side_effect = CalledProcessError(
-        255, "cmd", stderr="QEMU guest agent is not running"
-    )
+    mock_run.side_effect = subprocess.CalledProcessError(1, "cmd")
     assert pve_hardware_metrics.get_vm_disk_data("100") == ""
-
-    # Test with any other error message
-    mock_run.side_effect = CalledProcessError(255, "cmd", stderr="")
-    with pytest.raises(CalledProcessError):
-        pve_hardware_metrics.get_vm_disk_data("100")
+    mock_run.side_effect = subprocess.TimeoutExpired("cmd", 2)
+    assert pve_hardware_metrics.get_vm_disk_data("100") == ""
 
 
 def test_parse_vm_disk_data() -> None:
