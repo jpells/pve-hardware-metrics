@@ -37,7 +37,11 @@ jobs:
       - name: Install the app and pre-commit hooks with uv
         run: make install
 
-      - name: Run code quality checks (pre-commit hooks, mypy, and gitlint)
+      - name: Run gitlint
+        run: uv run gitlint
+        if: github.event_name != 'pull_request'
+
+      - name: Run code quality checks (pre-commit hooks and mypy)
         run: make check
 
       - name: Run tests with pytest and coverage
