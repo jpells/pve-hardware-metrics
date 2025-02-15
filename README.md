@@ -35,7 +35,7 @@ Configure the script using the following environment variables:
 
 | **Variable**         | **Description**               | **Required** |
 |----------------------|-------------------------------|--------------|
-| `HOST_TAG`           | Proxmox host name             | Yes          |
+| `HOST_TAG`           | Proxmox host name             | No           |
 | `INFLUX_HOST`        | InfluxDB server address       | Yes          |
 | `INFLUX_PORT`        | InfluxDB server port          | Yes          |
 | `INFLUX_TOKEN`       | Authentication token          | Yes          |

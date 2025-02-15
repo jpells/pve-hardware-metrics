@@ -13,6 +13,7 @@ import logging
 import logging.handlers
 import os
 import re
+import socket
 import sys
 from contextlib import contextmanager
 from datetime import UTC, datetime
@@ -466,7 +467,7 @@ def main() -> None:
 
     # Validate and get environment variables
     load_dotenv()  # Load environment variables
-    host = os.getenv("HOST_NAME", "pve")
+    host = os.getenv("HOST_NAME", socket.gethostname())
     influx_creds = {
         "host": os.getenv("INFLUX_HOST", "http://localhost"),
         "port": os.getenv("INFLUX_PORT", "8086"),

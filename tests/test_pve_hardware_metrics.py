@@ -581,7 +581,9 @@ def test_delete_measurement(mock_influxdb_client: Mock) -> None:
 @patch("pve_hardware_metrics.parse_sensors_data")
 @patch("pve_hardware_metrics.get_sensors_data")
 @patch("pve_hardware_metrics.run_command")
+@patch("socket.gethostname")
 def test_main(
+    mock_gethostname: Mock,
     mock_run_command: Mock,
     mock_get_sensors_data: Mock,
     mock_parse_sensors_data: Mock,
@@ -590,12 +592,14 @@ def test_main(
     """Test the main function.
 
     Args:
+        mock_gethostname (Mock): Mocked gethostname function.
         mock_run_command (Mock): Mocked run_command function.
         mock_get_sensors_data (Mock): Mocked get_sensors_data function.
         mock_parse_sensors_data (Mock): Mocked parse_sensors_data function.
         mock_upload_measurements (Mock): Mocked upload_measurements function.
 
     """
+    mock_gethostname.return_value = "test_value"
     mock_get_sensors_data.return_value = {}
     mock_parse_sensors_data.return_value = []
     mock_run_command.return_value = (
@@ -607,17 +611,22 @@ def test_main(
     ):
         pve_hardware_metrics.main()
     mock_upload_measurements.assert_not_called()
-    mock_parse_sensors_data.assert_called_once_with("pve", {})
+    mock_parse_sensors_data.assert_called_once_with("test_value", {})
 
 
 @patch("pve_hardware_metrics.delete_measurement")
-def test_main_with_delete(mock_delete_measurement: Mock) -> None:
+@patch("socket.gethostname")
+def test_main_with_delete(
+    mock_gethostname: Mock, mock_delete_measurement: Mock
+) -> None:
     """Test the main function with delete argument.
 
     Args:
+        mock_gethostname (Mock): Mocked gethostname function.
         mock_delete_measurement (Mock): Mocked delete_measurement function.
 
     """
+    mock_gethostname.return_value = "test_value"
     with (
         patch(
             "argparse.ArgumentParser.parse_args",
