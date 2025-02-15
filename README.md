@@ -24,7 +24,7 @@ A Python-based metrics collector for gathering and exporting hardware data from 
 
 Install the required dependencies using pip:
 ```bash
-pip install influxdb-client>=1.48.0
+pip install "influxdb-client>=1.48.0" "python-dotenv>=1.0.1"
 ```
 
 ## Configuration
@@ -33,14 +33,16 @@ pip install influxdb-client>=1.48.0
 
 Configure the script using the following environment variables:
 
-| **Variable**         | **Description**                | **Required** |
-|-----------------------|--------------------------------|--------------|
+| **Variable**         | **Description**               | **Required** |
+|----------------------|-------------------------------|--------------|
 | `HOST_TAG`           | Proxmox host name             | Yes          |
 | `INFLUX_HOST`        | InfluxDB server address       | Yes          |
 | `INFLUX_PORT`        | InfluxDB server port          | Yes          |
 | `INFLUX_TOKEN`       | Authentication token          | Yes          |
 | `INFLUX_ORGANIZATION`| InfluxDB organization name    | Yes          |
 | `INFLUX_BUCKET`      | Target bucket name            | Yes          |
+
+You can also store these environment variables in a `.env` file in the project directory. The `python-dotenv` library will automatically load them.
 
 ## Usage
 
