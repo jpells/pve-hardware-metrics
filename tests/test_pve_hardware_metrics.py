@@ -32,7 +32,6 @@ def test_get_env_variable(mock_getenv: Mock) -> None:
     """Test the get_env_variable function.
 
     Args:
-    ----
         mock_getenv (Mock): Mocked getenv function.
 
     """
@@ -48,7 +47,6 @@ def test_run_command(mock_run: Mock) -> None:
     """Test the run_command function.
 
     Args:
-    ----
         mock_run (Mock): Mocked run function.
 
     """
@@ -64,7 +62,6 @@ def test_get_sensors_data(mock_run_command: Mock) -> None:
     """Test the get_sensors_data function.
 
     Args:
-    ----
         mock_run_command (Mock): Mocked run_command function.
 
     """
@@ -195,7 +192,6 @@ def test_get_disks(mock_run_command: Mock) -> None:
     """Test the get_disks function.
 
     Args:
-    ----
         mock_run_command (Mock): Mocked run_command function.
 
     """
@@ -210,7 +206,6 @@ def test_get_disks_fail(mock_run_command: Mock) -> None:
     """Test the get_disks function with malformed JSON.
 
     Args:
-    ----
         mock_run_command (Mock): Mocked run_command function.
 
     """
@@ -224,7 +219,6 @@ def test_get_smartctl_data(mock_run_command: Mock) -> None:
     """Test the get_smartctl_data function.
 
     Args:
-    ----
         mock_run_command (Mock): Mocked run_command function.
 
     """
@@ -412,7 +406,6 @@ def test_get_vms(mock_run_command: Mock) -> None:
     """Test the get_vms function.
 
     Args:
-    ----
         mock_run_command (Mock): Mocked run_command function.
 
     """
@@ -425,7 +418,6 @@ def test_get_vm_disk_data(mock_run_command: Mock) -> None:
     """Test the get_vm_disk_data function.
 
     Args:
-    ----
         mock_run_command (Mock): Mocked run_command function.
 
     """
@@ -498,7 +490,6 @@ def test_influxdb_client(mock_influxdb_client: Mock) -> None:
     """Test the influxdb_client context manager.
 
     Args:
-    ----
         mock_influxdb_client (Mock): Mocked InfluxDBClient class.
 
     """
@@ -524,7 +515,6 @@ def test_influxdb_client_exceptions(mock_influxdb_client: Mock) -> None:
     """Test the influxdb_client context manager exception handling.
 
     Args:
-    ----
         mock_influxdb_client (Mock): Mocked InfluxDBClient class.
 
     """
@@ -554,7 +544,6 @@ def test_upload_measurements(
     """Test the upload_measurements function.
 
     Args:
-    ----
         mock_synchronous (Mock): Mocked SYNCHRONOUS constant.
         mock_influxdb_client (Mock): Mocked influxdb_client context manager.
 
@@ -583,7 +572,6 @@ def test_delete_measurement(mock_influxdb_client: Mock) -> None:
     """Test the delete_measurement function.
 
     Args:
-    ----
         mock_influxdb_client (Mock): Mocked influxdb_client context manager.
 
     """
@@ -623,7 +611,6 @@ def test_main(
     """Test the main function.
 
     Args:
-    ----
         mock_run_command (Mock): Mocked run_command function.
         mock_get_env_variable (Mock): Mocked get_env_variable function.
         mock_get_sensors_data (Mock): Mocked get_sensors_data function.
@@ -654,7 +641,6 @@ def test_main_with_delete(
     """Test the main function with delete argument.
 
     Args:
-    ----
         mock_get_env_variable (Mock): Mocked get_env_variable function.
         mock_delete_measurement (Mock): Mocked delete_measurement function.
 
@@ -697,7 +683,6 @@ def test_main_nvme_disk_name_trimming(
     """Test the main function for NVMe disk name trimming.
 
     Args:
-    ----
         mock_upload_measurements (Mock): Mocked upload_measurements function.
         mock_get_env_variable (Mock): Mocked get_env_variable function.
         mock_get_sensors_data (Mock): Mocked get_sensors_data function.
@@ -746,7 +731,6 @@ def test_main_with_vm_disk_data(  # noqa: PLR0913
     """Test the main function with VM disk data collection.
 
     Args:
-    ----
         mock_get_smartctl_data (Mock): Mocked get_smartctl_data function.
         mock_get_disks (Mock): Mocked get_disks function.
         mock_parse_sensors_data (Mock): Mocked parse_sensors_data function.

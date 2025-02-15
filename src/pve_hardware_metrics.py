@@ -43,17 +43,14 @@ def get_env_variable(
     """Get an environment variable and validate its presence.
 
     Args:
-    ----
         var_name (str): The name of the environment variable.
         default (Optional[Union[str, int, float]]): The default value if the
-        environment variable is not set.
+            environment variable is not set.
 
     Returns:
-    -------
         Union[str, int, float]: The value of the environment variable.
 
     Raises:
-    ------
         SystemExit: If the environment variable is not set and no default is provided.
 
     """
@@ -68,15 +65,12 @@ def run_command(command: list[str]) -> str:
     """Run a shell command and return its output.
 
     Args:
-    ----
         command (list): The command to run as a list of arguments.
 
     Returns:
-    -------
         str: The standard output of the command.
 
     Raises:
-    ------
         SystemExit: If the command fails.
 
     """
@@ -96,8 +90,7 @@ def run_command(command: list[str]) -> str:
 def get_sensors_data() -> dict[str, Any]:
     """Get sensor data in JSON format.
 
-    Returns
-    -------
+    Returns:
         dict: The parsed JSON data from sensors.
 
     """
@@ -119,12 +112,10 @@ def parse_sensors_data(host: str, sensors_data: dict[str, Any]) -> list[dict[str
     """Parse sensor data into a list of measurements.
 
     Args:
-    ----
         host (str): The host name.
         sensors_data (dict): The raw sensor data.
 
     Returns:
-    -------
         list: A list of parsed measurements.
 
     """
@@ -165,12 +156,10 @@ def parse_sensors_data(host: str, sensors_data: dict[str, Any]) -> list[dict[str
 def get_disks() -> list[str]:
     """Get a list of disk names.
 
-    Returns
-    -------
+    Returns:
         list: A list of disk names.
 
-    Raises
-    ------
+    Raises:
         SystemExit: If the JSON data cannot be parsed.
 
     """
@@ -193,11 +182,9 @@ def get_smartctl_data(disk: str) -> dict[str, Any]:
     """Get SMART data for a given disk.
 
     Args:
-    ----
         disk (str): The disk name.
 
     Returns:
-    -------
         dict: The SMART data output.
 
     """
@@ -219,13 +206,11 @@ def parse_smartctl_data(host: str, disk: str, data: dict[str, Any]) -> dict[str,
     """Parse SMART data into a measurement.
 
     Args:
-    ----
         host (str): The host name.
         disk (str): The disk name.
         data (dict): The raw SMART data.
 
     Returns:
-    -------
         dict: A parsed measurement.
 
     """
@@ -240,13 +225,11 @@ def parse_nvme_smartctl_data(
     """Parse SMART data for NVMe disks into a measurement.
 
     Args:
-    ----
         host (str): The host name.
         disk (str): The disk name.
         data (dict): The raw SMART data in JSON format.
 
     Returns:
-    -------
         dict: A parsed measurement.
 
     """
@@ -276,13 +259,11 @@ def parse_sata_smartctl_data(
     """Parse SMART data for SATA disks into a measurement.
 
     Args:
-    ----
         host (str): The host name.
         disk (str): The disk name.
         data (dict): The raw SMART data in JSON format.
 
     Returns:
-    -------
         dict: A parsed measurement.
 
     """
@@ -312,8 +293,7 @@ def parse_sata_smartctl_data(
 def get_vms() -> list[tuple[str, str]]:
     """Get a list of running VM IDs and their names.
 
-    Returns
-    -------
+    Returns:
         list: A list of tuples containing VM ID and VM name.
 
     """
@@ -330,11 +310,9 @@ def get_vm_disk_data(vm_id: str) -> str:
     """Get filesystem information for a given VM.
 
     Args:
-    ----
         vm_id (str): The VM ID.
 
     Returns:
-    -------
         str: The filesystem information output.
 
     """
@@ -347,14 +325,12 @@ def parse_vm_disk_data(
     """Parse filesystem information into a measurement.
 
     Args:
-    ----
         host (str): The host name.
         vm_id (str): The VM ID.
         vm_name (str): The VM name.
         data (str): The raw filesystem information.
 
     Returns:
-    -------
         dict: A parsed measurement.
 
     """
@@ -383,11 +359,9 @@ def influxdb_client(
     """Context manager for InfluxDBClient initialization and exception handling.
 
     Args:
-    ----
         influx_creds (dict): The InfluxDB credentials.
 
     Yields:
-    ------
         InfluxDBClient: The InfluxDB client instance.
 
     """
@@ -416,12 +390,10 @@ def upload_measurements(
     """Upload measurements to InfluxDB.
 
     Args:
-    ----
         influx_creds (dict): The InfluxDB credentials.
         measurements_list (list): The list of measurements to upload.
 
     Raises:
-    ------
         SystemExit: If the upload fails.
 
     """
@@ -435,12 +407,10 @@ def delete_measurement(influx_creds: dict[str, str], measurement: str) -> None:
     """Delete all data for a specific measurement or field from InfluxDB.
 
     Args:
-    ----
         influx_creds (dict): The InfluxDB credentials.
         measurement (str): The measurement to delete.
 
     Raises:
-    ------
         SystemExit: If the deletion fails.
 
     """
@@ -466,12 +436,10 @@ def collect_measurements(host: str, vm_disk: bool) -> list[dict[str, Any]]:  # n
     """Collect sensor, smartctl, and VM disk data measurements.
 
     Args:
-    ----
         host (str): The host name.
         vm_disk (bool): Whether to collect VM disk data.
 
     Returns:
-    -------
         list: A list of collected measurements.
 
     """
