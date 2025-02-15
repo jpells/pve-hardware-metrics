@@ -10,7 +10,7 @@ install: ## Install the app and pre-commit hooks with uv
 	@uv run pre-commit install --hook-type commit-msg
 
 .PHONY: check
-check: ## Run code quality checks (pre-commit hooks, mypy, and gitlint)
+check: ## Run code quality checks (pre-commit hooks and mypy)
 	@echo "🚑 Verifying uv lock file..."
 	@uv lock --locked
 	@echo "🚑 Running pre-commit hooks..."
