@@ -587,7 +587,7 @@ def test_main(
     """Test the main function.
 
     Args:
-        mock_gethostname (Mock): Mocked get_env_variable function.
+        mock_gethostname (Mock): Mocked gethostname function.
         mock_get_sensors_data (Mock): Mocked get_sensors_data function.
         mock_parse_sensors_data (Mock): Mocked parse_sensors_data function.
         mock_upload_measurements (Mock): Mocked upload_measurements function.

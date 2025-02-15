@@ -268,7 +268,7 @@ def get_vm_disk_data(vm_id: str) -> list[dict[str, Any]]:
         vm_id (str): The VM ID.
 
     Returns:
-        str: The filesystem information output.
+        list: The filesystem information output.
 
     """
     try:
@@ -294,7 +294,7 @@ def parse_vm_disk_data(
         host (str): The host name.
         vm_id (str): The VM ID.
         vm_name (str): The VM name.
-        data (str): The raw filesystem information.
+        data (list): The raw filesystem information.
 
     Returns:
         dict: A parsed measurement.
