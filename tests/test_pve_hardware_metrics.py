@@ -1,8 +1,7 @@
 """Unit tests for the pve_hardware_metrics module."""
 
 import argparse
-import json
-from subprocess import CalledProcessError
+import subprocess
 from unittest import mock
 from unittest.mock import Mock, patch
 
@@ -12,34 +11,19 @@ from influxdb_client.client.exceptions import InfluxDBError
 import pve_hardware_metrics
 
 
-@patch("pve_hardware_metrics.run")
-def test_run_command(mock_run: Mock) -> None:
-    """Test the run_command function.
-
-    Args:
-        mock_run (Mock): Mocked run function.
-
-    """
-    mock_run.return_value.stdout = "command output"
-    assert pve_hardware_metrics.run_command(["echo", "test"]) == "command output"
-    mock_run.side_effect = CalledProcessError(1, "cmd", "error")
-    with pytest.raises(SystemExit):
-        pve_hardware_metrics.run_command(["echo", "test"])
-
-
-@patch("pve_hardware_metrics.run_command")
-def test_get_sensors_data(mock_run_command: Mock) -> None:
+@patch("subprocess.check_output")
+def test_get_sensors_data(mock_check_output: Mock) -> None:
     """Test the get_sensors_data function.
 
     Args:
-        mock_run_command (Mock): Mocked run_command function.
+        mock_check_output (Mock): Mocked check_output function.
 
     """
-    mock_run_command.return_value = '{"sensor": {"Adapter": "ISA adapter"}}'
+    mock_check_output.return_value = '{"sensor": {"Adapter": "ISA adapter"}}'
     assert pve_hardware_metrics.get_sensors_data() == {
         "sensor": {"Adapter": "ISA adapter"}
     }
-    mock_run_command.return_value = "invalid json"
+    mock_check_output.return_value = "invalid json"
     assert pve_hardware_metrics.get_sensors_data() == {}
 
 
@@ -161,42 +145,42 @@ def test_parse_sensors_data() -> None:
     )
 
 
-@patch("pve_hardware_metrics.run_command")
-def test_get_disks(mock_run_command: Mock) -> None:
+@patch("subprocess.check_output")
+def test_get_disks(mock_check_output: Mock) -> None:
     """Test the get_disks function.
 
     Args:
-        mock_run_command (Mock): Mocked run_command function.
+        mock_check_output (Mock): Mocked check_output function.
 
     """
-    mock_run_command.return_value = (
+    mock_check_output.return_value = (
         '{"blockdevices": [{"name": "sda", "type": "disk"}]}'
     )
     assert pve_hardware_metrics.get_disks() == ["sda"]
 
 
-@patch("pve_hardware_metrics.run_command")
-def test_get_disks_fail(mock_run_command: Mock) -> None:
+@patch("subprocess.check_output")
+def test_get_disks_fail(mock_check_output: Mock) -> None:
     """Test the get_disks function with malformed JSON.
 
     Args:
-        mock_run_command (Mock): Mocked run_command function.
+        mock_check_output (Mock): Mocked check_output function.
 
     """
-    mock_run_command.return_value = "invalid json"
+    mock_check_output.return_value = "invalid json"
     with pytest.raises(SystemExit):
         pve_hardware_metrics.get_disks()
 
 
-@patch("pve_hardware_metrics.run_command")
-def test_get_smartctl_data(mock_run_command: Mock) -> None:
+@patch("subprocess.check_output")
+def test_get_smartctl_data(mock_check_output: Mock) -> None:
     """Test the get_smartctl_data function.
 
     Args:
-        mock_run_command (Mock): Mocked run_command function.
+        mock_check_output (Mock): Mocked check_output function.
 
     """
-    mock_run_command.return_value = (
+    mock_check_output.return_value = (
         """{"json_format_version": [1,0], "smartctl": {"version": [7,3]}}"""
     )
     assert pve_hardware_metrics.get_smartctl_data("/dev/nvme0n1") == {
@@ -205,7 +189,7 @@ def test_get_smartctl_data(mock_run_command: Mock) -> None:
             "version": [7, 3],
         },
     }
-    mock_run_command.return_value = "invalid json"
+    mock_check_output.return_value = "invalid json"
     assert pve_hardware_metrics.get_smartctl_data("/dev/nvme0n1") == {}
 
 
@@ -379,33 +363,50 @@ def test_parse_sata_smartctl_data() -> None:
     )
 
 
-@patch("pve_hardware_metrics.run_command")
-def test_get_vms(mock_run_command: Mock) -> None:
+@patch("subprocess.check_output")
+def test_get_vms(mock_check_output: Mock) -> None:
     """Test the get_vms function.
 
     Args:
-        mock_run_command (Mock): Mocked run_command function.
+        mock_check_output (Mock): Mocked check_output function.
 
     """
-    mock_run_command.return_value = "VMID NAME STATUS\n100 vm_name running"
+    mock_check_output.return_value = "VMID NAME STATUS\n100 vm_name running"
     assert pve_hardware_metrics.get_vms() == [("100", "vm_name")]
 
 
-@patch("pve_hardware_metrics.run_command")
-def test_get_vm_disk_data(mock_run_command: Mock) -> None:
+@patch("subprocess.check_output")
+def test_get_vm_disk_data(mock_check_output: Mock) -> None:
     """Test the get_vm_disk_data function.
 
     Args:
-        mock_run_command (Mock): Mocked run_command function.
+        mock_check_output (Mock): Mocked check_output function.
 
     """
-    mock_run_command.return_value = (
-        '{"name": "sda1", "mountpoint": "/", "used-bytes": 1024}'
+    mock_check_output.return_value = (
+        '[{"name": "sda1", "mountpoint": "/", "used-bytes": 1024}]'
     )
-    assert (
-        pve_hardware_metrics.get_vm_disk_data("100")
-        == '{"name": "sda1", "mountpoint": "/", "used-bytes": 1024}'
-    )
+    assert pve_hardware_metrics.get_vm_disk_data("100") == [
+        {
+            "name": "sda1",
+            "mountpoint": "/",
+            "used-bytes": 1024,
+        }
+    ]
+
+
+@patch("subprocess.run")
+def test_get_vm_disk_data_vm_shutdown(mock_run: Mock) -> None:
+    """Test the get_vm_disk_data function when VM is shut down.
+
+    Args:
+        mock_run (Mock): Mocked run function.
+
+    """
+    mock_run.side_effect = subprocess.CalledProcessError(1, "cmd")
+    assert pve_hardware_metrics.get_vm_disk_data("100") == []
+    mock_run.side_effect = subprocess.TimeoutExpired("cmd", 2)
+    assert pve_hardware_metrics.get_vm_disk_data("100") == []
 
 
 def test_parse_vm_disk_data() -> None:
@@ -459,9 +460,7 @@ def test_parse_vm_disk_data() -> None:
         "fields": {"disk": 2426138624.0},
     }
     assert (
-        pve_hardware_metrics.parse_vm_disk_data(
-            "test_host", "100", "vm_name", json.dumps(data)
-        )
+        pve_hardware_metrics.parse_vm_disk_data("test_host", "100", "vm_name", data)
         == expected
     )
 
@@ -576,11 +575,11 @@ def test_delete_measurement(mock_influxdb_client: Mock) -> None:
 @patch("pve_hardware_metrics.upload_measurements")
 @patch("pve_hardware_metrics.parse_sensors_data")
 @patch("pve_hardware_metrics.get_sensors_data")
-@patch("pve_hardware_metrics.run_command")
+@patch("pve_hardware_metrics.get_disks")
 @patch("socket.gethostname")
 def test_main(
     mock_gethostname: Mock,
-    mock_run_command: Mock,
+    mock_get_disks: Mock,
     mock_get_sensors_data: Mock,
     mock_parse_sensors_data: Mock,
     mock_upload_measurements: Mock,
@@ -589,18 +588,16 @@ def test_main(
 
     Args:
         mock_gethostname (Mock): Mocked gethostname function.
-        mock_run_command (Mock): Mocked run_command function.
+        mock_get_disks (Mock): Mocked get_disks function.
         mock_get_sensors_data (Mock): Mocked get_sensors_data function.
         mock_parse_sensors_data (Mock): Mocked parse_sensors_data function.
         mock_upload_measurements (Mock): Mocked upload_measurements function.
 
     """
     mock_gethostname.return_value = "test_value"
+    mock_get_disks.return_value = []
     mock_get_sensors_data.return_value = {}
     mock_parse_sensors_data.return_value = []
-    mock_run_command.return_value = (
-        '{"blockdevices": [{"name": "sda", "type": "disk"}]}'
-    )
     with patch(
         "argparse.ArgumentParser.parse_args",
         return_value=argparse.Namespace(vm_disk=False, test=True, delete=None),
