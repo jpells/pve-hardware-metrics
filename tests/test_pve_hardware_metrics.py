@@ -572,32 +572,32 @@ def test_delete_measurement(mock_influxdb_client: Mock) -> None:
     )
 
 
-@patch("pve_hardware_metrics.get_disks")
 @patch("pve_hardware_metrics.upload_measurements")
 @patch("pve_hardware_metrics.parse_sensors_data")
 @patch("pve_hardware_metrics.get_sensors_data")
+@patch("pve_hardware_metrics.get_disks")
 @patch("socket.gethostname")
 def test_main(
     mock_gethostname: Mock,
+    mock_get_disks: Mock,
     mock_get_sensors_data: Mock,
     mock_parse_sensors_data: Mock,
     mock_upload_measurements: Mock,
-    mock_get_disks: Mock,
 ) -> None:
     """Test the main function.
 
     Args:
         mock_gethostname (Mock): Mocked gethostname function.
+        mock_get_disks (Mock): Mocked get_disks function.
         mock_get_sensors_data (Mock): Mocked get_sensors_data function.
         mock_parse_sensors_data (Mock): Mocked parse_sensors_data function.
         mock_upload_measurements (Mock): Mocked upload_measurements function.
-        mock_get_disks (Mock): Mocked get_disks function.
 
     """
     mock_gethostname.return_value = "test_value"
+    mock_get_disks.return_value = []
     mock_get_sensors_data.return_value = {}
     mock_parse_sensors_data.return_value = []
-    mock_get_disks.return_value = []
     with patch(
         "argparse.ArgumentParser.parse_args",
         return_value=argparse.Namespace(vm_disk=False, test=True, delete=None),
