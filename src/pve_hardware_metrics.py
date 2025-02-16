@@ -5,29 +5,24 @@ This tool provides detailed system metrics, including sensor data, NVMe/SATA
 device information, and VM disk usage statistics.
 """  # noqa: D205
 
-from __future__ import annotations
-
 import argparse
 import json
 import logging
-import logging.handlers
 import os
 import re
 import socket
 import subprocess
 import sys
+from collections.abc import Generator
 from contextlib import contextmanager
 from datetime import UTC, datetime
 from pathlib import Path
-from typing import TYPE_CHECKING, Any
+from typing import Any
 
 from dotenv import load_dotenv
 from influxdb_client.client.exceptions import InfluxDBError
 from influxdb_client.client.influxdb_client import InfluxDBClient
 from influxdb_client.client.write_api import SYNCHRONOUS
-
-if TYPE_CHECKING:  # pragma: no cover
-    from collections.abc import Generator
 
 logging.basicConfig(
     level="INFO", format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
@@ -180,7 +175,7 @@ def parse_nvme_smartctl_data(
     Args:
         host (str): The host name.
         disk (str): The disk name.
-        data (dict): The raw SMART data in JSON format.
+        data (dict): The raw SMART data.
 
     Returns:
         dict: A parsed measurement.
@@ -214,7 +209,7 @@ def parse_sata_smartctl_data(
     Args:
         host (str): The host name.
         disk (str): The disk name.
-        data (dict): The raw SMART data in JSON format.
+        data (dict): The raw SMART data.
 
     Returns:
         dict: A parsed measurement.
