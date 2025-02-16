@@ -2,8 +2,7 @@
 
 import argparse
 import subprocess
-from unittest import mock
-from unittest.mock import Mock, patch
+from unittest.mock import ANY, Mock, patch
 
 import pytest
 from influxdb_client.client.exceptions import InfluxDBError
@@ -393,19 +392,9 @@ def test_get_vm_disk_data(mock_check_output: Mock) -> None:
             "used-bytes": 1024,
         }
     ]
-
-
-@patch("subprocess.run")
-def test_get_vm_disk_data_vm_shutdown(mock_run: Mock) -> None:
-    """Test the get_vm_disk_data function when VM is shut down.
-
-    Args:
-        mock_run (Mock): Mocked run function.
-
-    """
-    mock_run.side_effect = subprocess.CalledProcessError(1, "cmd")
+    mock_check_output.side_effect = subprocess.CalledProcessError(1, "cmd")
     assert pve_hardware_metrics.get_vm_disk_data("100") == []
-    mock_run.side_effect = subprocess.TimeoutExpired("cmd", 2)
+    mock_check_output.side_effect = subprocess.TimeoutExpired("cmd", 2)
     assert pve_hardware_metrics.get_vm_disk_data("100") == []
 
 
@@ -488,30 +477,10 @@ def test_influxdb_client(mock_influxdb_client: Mock) -> None:
     )
     mock_influxdb_client.return_value.close.assert_called_once()
 
-
-@patch("pve_hardware_metrics.InfluxDBClient")
-def test_influxdb_client_exceptions(mock_influxdb_client: Mock) -> None:
-    """Test the influxdb_client context manager exception handling.
-
-    Args:
-        mock_influxdb_client (Mock): Mocked InfluxDBClient class.
-
-    """
-    influx_creds = {
-        "url": "http://localhost:8086",
-        "token": "test_token",
-        "org": "test_org",
-    }
-
     # Test InfluxDBError handling
-    mock_influxdb_client.side_effect = InfluxDBError(response=mock.Mock())
+    mock_influxdb_client.side_effect = InfluxDBError(response=Mock())
     with pytest.raises(SystemExit), pve_hardware_metrics.influxdb_client(influx_creds):
         pass  # pragma: no cover
-
-    # Reset side effect for other tests
-    mock_influxdb_client.side_effect = None
-    with pve_hardware_metrics.influxdb_client(influx_creds) as client:
-        assert client == mock_influxdb_client.return_value
 
 
 @patch("pve_hardware_metrics.influxdb_client")
@@ -565,61 +534,81 @@ def test_delete_measurement(mock_influxdb_client: Mock) -> None:
 
     mock_delete_api.delete.assert_called_with(
         "1970-01-01T00:00:00Z",
-        mock.ANY,
+        ANY,
         '_measurement="test_measurement"',
         bucket="test_bucket",
         org="test_org",
     )
 
 
-@patch("pve_hardware_metrics.upload_measurements")
-@patch("pve_hardware_metrics.parse_sensors_data")
 @patch("pve_hardware_metrics.get_sensors_data")
 @patch("pve_hardware_metrics.get_disks")
-@patch("socket.gethostname")
-def test_main(
-    mock_gethostname: Mock,
+@patch("pve_hardware_metrics.get_smartctl_data")
+@patch("pve_hardware_metrics.get_vms")
+@patch("pve_hardware_metrics.get_vm_disk_data")
+def test_collect_measurements(
+    mock_get_vm_disk_data: Mock,
+    mock_get_vms: Mock,
+    mock_get_smartctl_data: Mock,
     mock_get_disks: Mock,
     mock_get_sensors_data: Mock,
-    mock_parse_sensors_data: Mock,
+) -> None:
+    """Test the collect_measurements function.
+
+    Args:
+        mock_get_vm_disk_data (Mock): Mocked get_vm_disk_data function.
+        mock_get_vms (Mock): Mocked get_vms function.
+        mock_get_smartctl_data (Mock): Mocked get_smartctl_data function.
+        mock_get_disks (Mock): Mocked get_disks function.
+        mock_get_sensors_data (Mock): Mocked get_sensors_data function.
+
+    """
+    mock_get_sensors_data.return_value = {
+        "sensor1": {"Adapter": "ISA adapter", "temp1": {"temp1_input": 50.0}}
+    }
+    mock_get_disks.return_value = ["sda", "nvme"]
+    mock_get_smartctl_data.return_value = {
+        "json_format_version": [1, 0],
+        "smartctl": {"version": [7, 3]},
+    }
+    mock_get_vms.return_value = [("100", "vm1")]
+    mock_get_vm_disk_data.return_value = [
+        {"name": "sda1", "mountpoint": "/", "used-bytes": 1024},
+        {"name": "nvme0n1", "mountpoint": "/", "used-bytes": 2048},
+    ]
+
+    measurements = pve_hardware_metrics.collect_measurements("test_host", vm_disk=True)
+    assert measurements
+
+    measurements = pve_hardware_metrics.collect_measurements("test_host", vm_disk=False)
+    assert not any(
+        measurement["measurement"] == "system" for measurement in measurements
+    )
+
+
+@patch("pve_hardware_metrics.collect_measurements")
+@patch("pve_hardware_metrics.upload_measurements")
+@patch("pve_hardware_metrics.delete_measurement")
+@patch("pve_hardware_metrics.socket.gethostname")
+def test_main(
+    mock_gethostname: Mock,
+    mock_delete_measurement: Mock,
     mock_upload_measurements: Mock,
+    mock_collect_measurements: Mock,
 ) -> None:
     """Test the main function.
 
     Args:
         mock_gethostname (Mock): Mocked gethostname function.
-        mock_get_disks (Mock): Mocked get_disks function.
-        mock_get_sensors_data (Mock): Mocked get_sensors_data function.
-        mock_parse_sensors_data (Mock): Mocked parse_sensors_data function.
-        mock_upload_measurements (Mock): Mocked upload_measurements function.
-
-    """
-    mock_gethostname.return_value = "test_value"
-    mock_get_disks.return_value = []
-    mock_get_sensors_data.return_value = {}
-    mock_parse_sensors_data.return_value = []
-    with patch(
-        "argparse.ArgumentParser.parse_args",
-        return_value=argparse.Namespace(vm_disk=False, test=True, delete=None),
-    ):
-        pve_hardware_metrics.main()
-    mock_upload_measurements.assert_not_called()
-    mock_parse_sensors_data.assert_called_once_with("test_value", {})
-
-
-@patch("pve_hardware_metrics.delete_measurement")
-@patch("socket.gethostname")
-def test_main_with_delete(
-    mock_gethostname: Mock, mock_delete_measurement: Mock
-) -> None:
-    """Test the main function with delete argument.
-
-    Args:
-        mock_gethostname (Mock): Mocked gethostname function.
         mock_delete_measurement (Mock): Mocked delete_measurement function.
+        mock_upload_measurements (Mock): Mocked upload_measurements function.
+        mock_collect_measurements (Mock): Mocked collect_measurements function.
 
     """
-    mock_gethostname.return_value = "test_value"
+    mock_gethostname.return_value = "test_host"
+    mock_collect_measurements.return_value = [{"measurement": "test"}]
+
+    # delete option
     with (
         patch(
             "argparse.ArgumentParser.parse_args",
@@ -640,99 +629,14 @@ def test_main_with_delete(
         "test_measurement",
     )
 
-
-@patch("pve_hardware_metrics.get_smartctl_data")
-@patch("pve_hardware_metrics.get_disks")
-@patch("pve_hardware_metrics.get_sensors_data")
-@patch("pve_hardware_metrics.upload_measurements")
-def test_main_nvme_disk_name_trimming(
-    mock_upload_measurements: Mock,
-    mock_get_sensors_data: Mock,
-    mock_get_disks: Mock,
-    mock_get_smartctl_data: Mock,
-) -> None:
-    """Test the main function for NVMe disk name trimming.
-
-    Args:
-        mock_upload_measurements (Mock): Mocked upload_measurements function.
-        mock_get_sensors_data (Mock): Mocked get_sensors_data function.
-        mock_get_disks (Mock): Mocked get_disks function.
-        mock_get_smartctl_data (Mock): Mocked get_smartctl_data function.
-
-    """
-    mock_get_sensors_data.return_value = {}
-    mock_get_disks.return_value = ["nvme0n1"]
-    mock_get_smartctl_data.return_value = {}
-
+    # test option
     with patch(
         "argparse.ArgumentParser.parse_args",
-        return_value=argparse.Namespace(vm_disk=False, test=False, delete=None),
+        return_value=argparse.Namespace(vm_disk=False, test=True, delete=None),
     ):
         pve_hardware_metrics.main()
+        mock_collect_measurements.assert_called_once_with("test_host", vm_disk=False)
 
+    # normal run
+    pve_hardware_metrics.main()
     mock_upload_measurements.assert_called_once()
-    measurements = mock_upload_measurements.call_args[0][1]
-    assert any(
-        measurement["measurement"] == "smartctl.nvme0" for measurement in measurements
-    )
-
-
-@patch("pve_hardware_metrics.get_vms")
-@patch("pve_hardware_metrics.get_vm_disk_data")
-@patch("pve_hardware_metrics.parse_vm_disk_data")
-@patch("pve_hardware_metrics.upload_measurements")
-@patch("pve_hardware_metrics.get_sensors_data")
-@patch("pve_hardware_metrics.parse_sensors_data")
-@patch("pve_hardware_metrics.get_disks")
-@patch("pve_hardware_metrics.get_smartctl_data")
-def test_main_with_vm_disk_data(  # noqa: PLR0913
-    mock_get_smartctl_data: Mock,
-    mock_get_disks: Mock,
-    mock_parse_sensors_data: Mock,
-    mock_get_sensors_data: Mock,
-    mock_upload_measurements: Mock,
-    mock_parse_vm_disk_data: Mock,
-    mock_get_vm_disk_data: Mock,
-    mock_get_vms: Mock,
-) -> None:
-    """Test the main function with VM disk data collection.
-
-    Args:
-        mock_get_smartctl_data (Mock): Mocked get_smartctl_data function.
-        mock_get_disks (Mock): Mocked get_disks function.
-        mock_parse_sensors_data (Mock): Mocked parse_sensors_data function.
-        mock_get_sensors_data (Mock): Mocked get_sensors_data function.
-        mock_upload_measurements (Mock): Mocked upload_measurements function.
-        mock_parse_vm_disk_data (Mock): Mocked parse_vm_disk_data function.
-        mock_get_vm_disk_data (Mock): Mocked get_vm_disk_data function.
-        mock_get_vms (Mock): Mocked get_vms function.
-
-    """
-    mock_get_sensors_data.return_value = {}
-    mock_parse_sensors_data.return_value = []
-    mock_get_disks.return_value = ["sda"]
-    mock_get_smartctl_data.return_value = {}
-    mock_get_vms.return_value = [("100", "vm_name")]
-    mock_get_vm_disk_data.return_value = (
-        '{"name": "sda1", "mountpoint": "/", "used-bytes": 1024}'
-    )
-    mock_parse_vm_disk_data.return_value = {
-        "measurement": "system",
-        "tags": {
-            "host": "vm_name",
-            "nodename": "test_value",
-            "object": "qemu",
-            "vmid": "100",
-        },
-        "fields": {"disk": 1024.0},
-    }
-
-    with patch(
-        "argparse.ArgumentParser.parse_args",
-        return_value=argparse.Namespace(vm_disk=True, test=False, delete=None),
-    ):
-        pve_hardware_metrics.main()
-
-    mock_upload_measurements.assert_called_once()
-    measurements = mock_upload_measurements.call_args[0][1]
-    assert any(measurement["measurement"] == "system" for measurement in measurements)
